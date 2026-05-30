@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { askGemini } from "@/lib/gemini";
-import { askDeepSeek } from "@/lib/deepseek";
+import { askGroq } from "@/lib/groq";
 
 export async function POST(req) {
   try {
@@ -8,19 +8,26 @@ export async function POST(req) {
 
     let answer = "";
 
-    if (model === "deepseek") {
-      answer = await askDeepSeek(message);
-    } else {
-      answer = await askGemini(message);
+    switch (model) {
+      case "groq":
+        answer = await askGroq(message);
+        break;
+
+      case "gemini":
+      default:
+        answer = await askGemini(message);
+        break;
     }
 
     return NextResponse.json({
       answer,
     });
   } catch (error) {
+    console.error(error);
+
     return NextResponse.json(
       {
-        answer: "Terjadi kesalahan server",
+        error: error.message,
       },
       {
         status: 500,
