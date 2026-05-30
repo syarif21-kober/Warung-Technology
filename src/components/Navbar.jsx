@@ -29,6 +29,9 @@ const Navbar = () => {
                     <li>
                         <Link href={"#kontak"}>Kontak</Link>
                     </li>
+                    <li>
+                        <Link href={"/chatbot"}>Chatbot</Link>
+                    </li>
                 </ul>
                 <div className="md:hidden block" onClick={() => handleClick()}>
                     <i className="ri-menu-3-line ri-2x font-bold"></i>
