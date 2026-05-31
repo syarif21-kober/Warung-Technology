@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -13,20 +13,46 @@ export default function ChatBotPage() {
     {
       role: "assistant",
       content:
-        "Halo 👋, saya Wartech AI Assistant. Ada yang bisa saya bantu hari ini?",
+        "Halo 👋 Saya Wartech AI Assistant.\n\nSaya siap membantu seputar:\n\n- Website Development\n- Aplikasi Mobile\n- AI & Automation\n- Jaringan Komputer\n- Konsultasi Teknologi\n\nSilakan tanyakan apa yang Anda butuhkan.",
     },
   ]);
 
+  const bottomRef = useRef(null);
+
+  // Simpan model pilihan user
+  useEffect(() => {
+    const savedModel = localStorage.getItem("wartech-model");
+
+    if (savedModel) {
+      setModel(savedModel);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("wartech-model", model);
+  }, [model]);
+
+  // Auto scroll
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({
+      behavior: "smooth",
+    });
+  }, [chat, loading]);
+
   async function sendMessage() {
-    if (!message.trim()) return;
+    if (!message.trim() || loading) return;
 
-    const userMessage = {
-      role: "user",
-      content: message,
-    };
+    const currentMessage = message.trim();
 
-    setChat((prev) => [...prev, userMessage]);
+    setChat((prev) => [
+      ...prev,
+      {
+        role: "user",
+        content: currentMessage,
+      },
+    ]);
 
+    setMessage("");
     setLoading(true);
 
     try {
@@ -36,7 +62,7 @@ export default function ChatBotPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          message,
+          message: currentMessage,
           model,
         }),
       });
@@ -50,7 +76,7 @@ export default function ChatBotPage() {
           content:
             data.answer ||
             data.error ||
-            "Maaf, terjadi kesalahan.",
+            "Maaf, terjadi kesalahan pada server.",
         },
       ]);
     } catch (error) {
@@ -64,67 +90,108 @@ export default function ChatBotPage() {
             "Terjadi kesalahan saat menghubungi server.",
         },
       ]);
+    } finally {
+      setLoading(false);
     }
-
-    setMessage("");
-    setLoading(false);
   }
 
   function handleKeyDown(e) {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (
+      e.key === "Enter" &&
+      !e.shiftKey
+    ) {
       e.preventDefault();
       sendMessage();
     }
   }
 
   return (
-    <section className="max-w-6xl mx-auto py-10 px-4">
-      {/* Header */}
+    <section className="max-w-5xl mx-auto px-4 py-8">
+
+      {/* HEADER */}
       <div className="mb-6">
-        <h1 className="text-4xl font-bold">
+        <h1 className="text-3xl md:text-4xl font-bold">
           Wartech AI Assistant
         </h1>
 
         <p className="text-gray-500 mt-2">
-          Konsultasi teknologi, website, aplikasi,
-          jaringan, dan solusi digital.
+          Konsultasi teknologi, website,
+          aplikasi, AI, jaringan, dan solusi
+          digital untuk bisnis Anda.
         </p>
       </div>
 
-      {/* Model Selector */}
-      <div className="mb-4">
-        <label className="block mb-2 font-medium">
+      {/* MODEL SELECTOR */}
+      <div className="mb-6">
+
+        <h3 className="font-semibold mb-3">
           Pilih Model AI
-        </label>
+        </h3>
 
-        <select
-          value={model}
-          onChange={(e) => setModel(e.target.value)}
-          className="border rounded-lg px-4 py-2"
-        >
-          <option value="gemini">
-            Gemini 2.5 Flash
-          </option>
+        <div className="grid grid-cols-2 gap-3">
 
-          <option value="groq">
-            Groq Llama 3.3
-          </option>
-        </select>
+          <button
+            type="button"
+            onClick={() => setModel("gemini")}
+            className={`py-3 rounded-xl border transition-all font-medium ${
+              model === "gemini"
+                ? "bg-black text-white border-black"
+                : "bg-white border-gray-300"
+            }`}
+          >
+            Gemini
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setModel("groq")}
+            className={`py-3 rounded-xl border transition-all font-medium ${
+              model === "groq"
+                ? "bg-black text-white border-black"
+                : "bg-white border-gray-300"
+            }`}
+          >
+            Groq
+          </button>
+
+        </div>
+
+        <p className="text-sm text-gray-500 mt-3">
+          Model aktif :
+          <span className="font-semibold ml-1">
+            {model === "gemini"
+              ? " Gemini 2.5 Flash"
+              : " Groq Llama 3.3"}
+          </span>
+        </p>
+
       </div>
 
-      {/* Chat Window */}
-      <div className="border rounded-2xl h-[600px] overflow-y-auto p-5 bg-gray-50 mb-4">
+      {/* CHAT WINDOW */}
+      <div
+        className="
+          border
+          rounded-2xl
+          bg-gray-50
+          h-[55vh]
+          md:h-[65vh]
+          overflow-y-auto
+          p-4
+          shadow-sm
+          mb-4
+        "
+      >
         {chat.map((item, index) => (
           <div
             key={index}
-            className={`mb-5 flex ${
+            className={`mb-4 flex ${
               item.role === "user"
                 ? "justify-end"
                 : "justify-start"
             }`}
           >
             <div
-              className={`max-w-[80%] p-4 rounded-2xl shadow-sm ${
+              className={`max-w-[90%] md:max-w-[75%] p-4 rounded-2xl break-words ${
                 item.role === "user"
                   ? "bg-blue-600 text-white"
                   : "bg-white border"
@@ -141,7 +208,7 @@ export default function ChatBotPage() {
 
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-white border rounded-2xl p-4">
+            <div className="bg-white border rounded-2xl px-4 py-3 shadow-sm">
               <div className="flex gap-2">
                 <span className="animate-bounce">
                   ●
@@ -156,29 +223,56 @@ export default function ChatBotPage() {
             </div>
           </div>
         )}
+
+        <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
-      <div className="flex gap-3">
+      {/* INPUT */}
+      <div className="flex flex-col md:flex-row gap-3">
+
         <textarea
-          rows={2}
           value={message}
+          rows={3}
           onChange={(e) =>
             setMessage(e.target.value)
           }
           onKeyDown={handleKeyDown}
           placeholder="Tulis pertanyaan Anda..."
-          className="flex-1 border rounded-xl p-4 resize-none"
+          className="
+            flex-1
+            border
+            rounded-xl
+            p-4
+            resize-none
+            text-base
+            focus:outline-none
+            focus:ring-2
+            focus:ring-black
+          "
         />
 
         <button
+          type="button"
           onClick={sendMessage}
           disabled={loading}
-          className="bg-black text-white px-6 rounded-xl hover:opacity-90 disabled:opacity-50"
+          className="
+            bg-black
+            text-white
+            px-6
+            py-3
+            rounded-xl
+            hover:opacity-90
+            disabled:opacity-50
+            min-w-[120px]
+          "
         >
-          Kirim
+          {loading
+            ? "Memproses..."
+            : "Kirim"}
         </button>
+
       </div>
+
     </section>
   );
 }
